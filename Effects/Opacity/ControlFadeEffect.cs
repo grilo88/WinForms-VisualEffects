@@ -1,19 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
+﻿using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using VisualEffects;
+using System.Windows.Forms;
+using VisualEffects.Extensions;
 
-namespace VisualEffects.Animations.Effects
+namespace VisualEffects.Effects.Opacity
 {
     public class ControlFadeEffect : IEffect
     {
-        public const int MAX_OPACITY = 100;
-        public const int MIN_OPACITY = 0;
+        public const int MaxOpacity = 100;
+        public const int MinOpacity = 0;
 
         private class State
         {
@@ -36,7 +33,7 @@ namespace VisualEffects.Animations.Effects
                 var state = new State()
                 {
                     ParentGraphics = parentGraphics,
-                    Opacity = control.Visible ? MAX_OPACITY : MIN_OPACITY,
+                    Opacity = control.Visible ? MaxOpacity : MinOpacity,
                 };
 
                 _controlCache.Add( control, state );
@@ -68,7 +65,7 @@ namespace VisualEffects.Animations.Effects
             }
             state.PreviousBounds = control.Bounds;
 
-            if( newValue == MAX_OPACITY )
+            if( newValue == MaxOpacity )
             {
                 control.Visible = true;
                 return;
@@ -93,12 +90,12 @@ namespace VisualEffects.Animations.Effects
 
         public int GetMinimumValue( Control control )
         {
-            return MIN_OPACITY;
+            return MinOpacity;
         }
 
         public int GetMaximumValue( Control control )
         {
-            return MAX_OPACITY;
+            return MaxOpacity;
         }
 
         public EffectInteractions Interaction
@@ -106,12 +103,12 @@ namespace VisualEffects.Animations.Effects
             get { return EffectInteractions.TRANSPARENCY; }
         }
 
-        private Bitmap BlendWithBgColor( Image image1, Color bgColor )
+        private Bitmap BlendWithBgColor( Image image1, System.Drawing.Color bgColor )
         {
             var finalImage = new Bitmap( image1.Width, image1.Height );
             using( Graphics g = Graphics.FromImage( finalImage ) )
             {
-                g.Clear( Color.Black );
+                g.Clear( System.Drawing.Color.Black );
 
                 g.FillRectangle( new SolidBrush( bgColor ), new Rectangle( 0, 0, image1.Width, image1.Height ) );
                 g.DrawImage( image1, new Rectangle( 0, 0, image1.Width, image1.Height ) );
@@ -126,8 +123,8 @@ namespace VisualEffects.Animations.Effects
     /// </summary>
     public class ControlFadeEffect2 : IEffect
     {
-        public const int MAX_OPACITY = 100;
-        public const int MIN_OPACITY = 0;
+        public const int MaxOpacity = 100;
+        public const int MinOpacity = 0;
 
         private class State
         {
@@ -137,34 +134,32 @@ namespace VisualEffects.Animations.Effects
             public Bitmap Snapshot { get; set; }
         }
 
-        private static Dictionary<Control, State> _controlCache
+        private static readonly Dictionary<Control, State> ControlCache
             = new Dictionary<Control, State>();
 
         public ControlFadeEffect2( Control control )
         {
-            if( !_controlCache.ContainsKey( control ) )
+            if (ControlCache.ContainsKey(control)) return;
+            var parentGraphics = control.Parent.CreateGraphics();
+            parentGraphics.CompositingQuality = CompositingQuality.HighSpeed;
+
+            var state = new State
             {
-                var parentGraphics = control.Parent.CreateGraphics();
-                parentGraphics.CompositingQuality = CompositingQuality.HighSpeed;
+                ParentGraphics = parentGraphics,
+                Opacity = control.Visible ? MaxOpacity : MinOpacity,
+            };
 
-                var state = new State()
-                {
-                    ParentGraphics = parentGraphics,
-                    Opacity = control.Visible ? MAX_OPACITY : MIN_OPACITY,
-                };
-
-                _controlCache.Add( control, state );
-            }
+            ControlCache.Add( control, state );
         }
 
         public int GetCurrentValue( Control control )
         {
-            return _controlCache[ control ].Opacity;
+            return ControlCache[ control ].Opacity;
         }
 
         public void SetValue( Control control, int originalValue, int valueToReach, int newValue )
         {
-            var state = _controlCache[ control ];
+            var state = ControlCache[ control ];
 
             //invalidate region no more in use
             var region = new Region( state.PreviousBounds );
@@ -172,6 +167,7 @@ namespace VisualEffects.Animations.Effects
             control.Parent.Invalidate( region );
 
             var form = control.FindForm();
+            if(null == form) return;
             var formRelativeCoords = form.RectangleToClient( control.RectangleToScreen( control.ClientRectangle ) );
 
             //I get real-time snapshot (no cache) so i can mix animations
@@ -184,13 +180,13 @@ namespace VisualEffects.Animations.Effects
                 var formSnapshot = form.GetFormBorderlessSnapshot().Clone( formRelativeCoords, PixelFormat.DontCare );
 
                 //avoid refresh and thus flickering: blend parent form snapshot with control snapshot
-                var bgBlendedSnapshot = this.BlendImages( formSnapshot, controlSnapshot );
+                var bgBlendedSnapshot = BlendImages( formSnapshot, controlSnapshot );
                 //bgBlendedSnapshot.Save( @"C:\Users\Sampietro.Mauro\Documents\_root\bmp" + newValue + ".bmp" );
                 state.Snapshot = bgBlendedSnapshot;
             }
             state.PreviousBounds = control.Bounds;
 
-            if( newValue == MAX_OPACITY )
+            if( newValue == MaxOpacity )
             {
                 control.Visible = true;
                 return;
@@ -216,12 +212,12 @@ namespace VisualEffects.Animations.Effects
 
         public int GetMinimumValue( Control control )
         {
-            return MIN_OPACITY;
+            return MinOpacity;
         }
 
         public int GetMaximumValue( Control control )
         {
-            return MAX_OPACITY;
+            return MaxOpacity;
         }
 
         public EffectInteractions Interaction
@@ -234,7 +230,7 @@ namespace VisualEffects.Animations.Effects
             var finalImage = new Bitmap( image1.Width, image1.Height );
             using( Graphics g = Graphics.FromImage( finalImage ) )
             {
-                g.Clear( Color.Black );
+                g.Clear( System.Drawing.Color.Black );
 
                 g.DrawImage( image1, new Rectangle( 0, 0, image1.Width, image1.Height ) );
                 g.DrawImage( image2, new Rectangle( 0, 0, image1.Width, image1.Height ) );

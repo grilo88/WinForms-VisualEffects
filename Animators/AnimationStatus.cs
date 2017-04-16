@@ -1,26 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Diagnostics;
 using System.Threading;
+using VisualEffects.Effects;
 
 namespace VisualEffects.Animators
 {
     public class AnimationStatus : EventArgs
     {
-        private Stopwatch _stopwatch;
+        private readonly Stopwatch _stopwatch;
 
-        public long ElapsedMilliseconds
-        {
-            get { return _stopwatch.ElapsedMilliseconds; }
-        }
+        public long ElapsedMilliseconds => _stopwatch.ElapsedMilliseconds;
+
         public CancellationTokenSource CancellationToken { get; private set; }
         public bool IsCompleted { get; set; }
 
         public AnimationStatus( CancellationTokenSource token, Stopwatch stopwatch )
         {
-            this.CancellationToken = token;
+            CancellationToken = token;
             _stopwatch = stopwatch;
         }
         public IEffect Effect { get; set; }

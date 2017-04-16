@@ -1,22 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
-namespace VisualEffects
+namespace VisualEffects.Extensions
 {
     public static class ControlExtensions
     {
         public static void SelectNextControl( this Control initialControl )
         {
-            if( initialControl != null )
-            {
-                var ctrlSelected = initialControl.SelectNextControl( initialControl, true, true, false, false );
-                if( !ctrlSelected )
-                    SelectNextControl( initialControl.Parent );
-            }
+            if (initialControl == null) return;
+            var ctrlSelected = initialControl.SelectNextControl( initialControl, true, true, false, false );
+            if( !ctrlSelected )
+                SelectNextControl( initialControl.Parent );
         }
 
         public static Bitmap GetSnapshot( this Control control )

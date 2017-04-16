@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using VisualEffects.Animations.Effects;
+﻿using System.Windows.Forms;
 
-namespace VisualEffects
+namespace VisualEffects.Effects
 {
     /// <summary>
     /// By implementing this interface you define what property of your control

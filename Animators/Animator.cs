@@ -1,16 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using VisualEffects.Animations.Effects;
-using VisualEffects.Easing;
-using VisualEffects.Animators;
+using VisualEffects.Effects;
 
-namespace VisualEffects
+namespace VisualEffects.Animators
 {
     public static class Animator
     {
@@ -33,11 +27,8 @@ namespace VisualEffects
         /// <returns></returns>
         public static AnimationStatus Animate(Control control, IEffect iEffect, EasingDelegate easing, int valueToReach, int duration, int delay, bool reverse = false, int loops = 1)
         {
-            
             try
             {
-
-            
                 //used to calculate animation frame based on how much time has effectively passed
                 var stopwatch = new Stopwatch();
 
@@ -45,36 +36,35 @@ namespace VisualEffects
                 var cancelTokenSource = new CancellationTokenSource();
 
                 //used to access animation progress
-                var animationStatus = new AnimationStatus(cancelTokenSource, stopwatch);
-                animationStatus.Effect = iEffect;
+                var animationStatus = new AnimationStatus(cancelTokenSource, stopwatch) { Effect = iEffect };
 
                 //This timer allows delayed start. Control's state checks and evaluations are delayed too.
-                new System.Threading.Timer((state) =>
+                new System.Threading.Timer(state =>
                {
-               //is there anything to do here?
-               int originalValue = iEffect.GetCurrentValue(control);
+                   //is there anything to do here?
+                   int originalValue = iEffect.GetCurrentValue(control);
                    if (originalValue == valueToReach)
                    {
                        animationStatus.IsCompleted = true;
                        return;
                    }
 
-               //upper bound check
-               int maxVal = iEffect.GetMaximumValue(control);
+                   //upper bound check
+                   int maxVal = iEffect.GetMaximumValue(control);
                    if (valueToReach > maxVal)
                    {
-                       string msg = String.Format("Value must be lesser than the maximum allowed. " +
-                           "Max: {0}, provided value: {1}", maxVal, valueToReach);
+                       string msg = "Value must be lesser than the maximum allowed. " +
+                                    $"Max: {maxVal}, provided value: {valueToReach}";
 
                        throw new ArgumentException(msg, "valueToReach");
                    }
 
-               //lower bound check
-               int minVal = iEffect.GetMinimumValue(control);
+                   //lower bound check
+                   int minVal = iEffect.GetMinimumValue(control);
                    if (valueToReach < iEffect.GetMinimumValue(control))
                    {
-                       string msg = String.Format("Value must be greater than the minimum allowed. " +
-                           "Min: {0}, provided value: {1}", minVal, valueToReach);
+                       string msg = "Value must be greater than the minimum allowed. " +
+                                    $"Min: {minVal}, provided value: {valueToReach}";
 
                        throw new ArgumentException(msg, "valueToReach");
                    }
@@ -84,108 +74,105 @@ namespace VisualEffects
 
                    int actualValueChange = Math.Abs(originalValue - valueToReach);
 
-                   System.Timers.Timer animationTimer = new System.Timers.Timer();
-               //adjust interval (naive, edge cases can mess up)
-               animationTimer.Interval = (duration > actualValueChange) ?
-                      (duration / actualValueChange) : actualValueChange;
+                   System.Timers.Timer animationTimer = new System.Timers.Timer
+                   {
+                       Interval = duration > actualValueChange
+                           ? duration / actualValueChange
+                           : actualValueChange
+                   };
+                   //adjust interval (naive, edge cases can mess up)
 
-               //because of naive interval calculation this is required
-               if (iEffect.Interaction == EffectInteractions.COLOR)
+                   //because of naive interval calculation this is required
+                   if (iEffect.Interaction == EffectInteractions.COLOR)
                        animationTimer.Interval = 10;
 
                    if (!control.IsDisposed)
                    {
 
 
-                   //main animation timer tick
-                   animationTimer.Elapsed += (o, e2) =>
-                      {
-                          if (!control.IsDisposed)
+                       //main animation timer tick
+                       animationTimer.Elapsed += (o, e2) =>
                           {
-                          //cancellation support
-                          if (cancelTokenSource.Token.IsCancellationRequested)
+                              if (!control.IsDisposed)
                               {
-                                  animationStatus.IsCompleted = true;
-                                  animationTimer.Stop();
-                                  stopwatch.Stop();
-
-                                  return;
-                              }
-
-                          //main logic
-                          bool increasing = originalValue < valueToReach;
-
-                              int minValue = Math.Min(originalValue, valueToReach);
-                              int maxValue = Math.Abs(valueToReach - originalValue);
-                              int newValue = (int)easing(stopwatch.ElapsedMilliseconds, minValue, maxValue, duration);
-
-                              if (!increasing)
-                                  newValue = (originalValue + valueToReach) - newValue - 1;
-
-
-
-
-                              control.BeginInvoke(new MethodInvoker(() =>
-                              {
-                                  if (!control.IsDisposed && control.IsHandleCreated)
+                                  //cancellation support
+                                  if (cancelTokenSource.Token.IsCancellationRequested)
                                   {
-                                      iEffect.SetValue(control, originalValue, valueToReach, newValue);
+                                      animationStatus.IsCompleted = true;
+                                      animationTimer.Stop();
+                                      stopwatch.Stop();
 
-                                      bool timeout = stopwatch.ElapsedMilliseconds >= duration;
-                                      if (timeout)
+                                      return;
+                                  }
+
+                                  //main logic
+                                  bool increasing = originalValue < valueToReach;
+
+                                  int minValue = Math.Min(originalValue, valueToReach);
+                                  int maxValue = Math.Abs(valueToReach - originalValue);
+                                  int newValue = (int)easing(stopwatch.ElapsedMilliseconds, minValue, maxValue, duration);
+
+                                  if (!increasing)
+                                      newValue = originalValue + valueToReach - newValue - 1;
+
+                                  control.BeginInvoke(new MethodInvoker(() =>
+                                  {
+                                      if (!control.IsDisposed && control.IsHandleCreated)
                                       {
-                                          if (reverse && (!reversed || loops <= 0 || performedLoops < loops))
+                                          iEffect.SetValue(control, originalValue, valueToReach, newValue);
+
+                                          bool timeout = stopwatch.ElapsedMilliseconds >= duration;
+                                          if (timeout)
                                           {
-                                              reversed = !reversed;
-                                              if (reversed)
-                                                  performedLoops++;
+                                              if (reverse && (!reversed || loops <= 0 || performedLoops < loops))
+                                              {
+                                                  reversed = !reversed;
+                                                  if (reversed)
+                                                      performedLoops++;
 
-                                              int initialValue = originalValue;
-                                              int finalValue = valueToReach;
+                                                  int initialValue = originalValue;
+                                                  int finalValue = valueToReach;
 
-                                              valueToReach = valueToReach == finalValue ? initialValue : finalValue;
-                                              originalValue = valueToReach == finalValue ? initialValue : finalValue;
+                                                  valueToReach = valueToReach == finalValue ? initialValue : finalValue;
+                                                  originalValue = valueToReach == finalValue ? initialValue : finalValue;
 
-                                              stopwatch.Restart();
-                                              animationTimer.Start();
-                                          }
-                                          else
-                                          {
-                                              animationStatus.IsCompleted = true;
-                                              animationTimer.Stop();
-                                              stopwatch.Stop();
+                                                  stopwatch.Restart();
+                                                  animationTimer.Start();
+                                              }
+                                              else
+                                              {
+                                                  animationStatus.IsCompleted = true;
+                                                  animationTimer.Stop();
+                                                  stopwatch.Stop();
 
-                                              if (Animated != null)
-                                                  Animated(control, animationStatus);
+                                                  if (Animated != null)
+                                                      Animated(control, animationStatus);
+                                              }
                                           }
                                       }
-                                  }
-                                  else
-                                  {
-                                      if (Animated != null)
-                                          Animated(control, animationStatus);
-                                  }
-                              }));
-                          }
-                      };
+                                      else
+                                      {
+                                          if (Animated != null)
+                                              Animated(control, animationStatus);
+                                      }
+                                  }));
+                              }
+                          };
                    }
 
-               //start
-               stopwatch.Start();
+                   //start
+                   stopwatch.Start();
                    animationTimer.Start();
 
-               }, null, delay, System.Threading.Timeout.Infinite);
-            
+               }, null, delay, Timeout.Infinite);
 
-            return animationStatus;
+                return animationStatus;
             }
             catch (Exception e)
             {
-                if( Debugger.IsAttached)
-                {
-                    Debug.Print(String.Format("Exception @ VisualEffects.Animator.Animate(). Message: {0}", e.Message));
-                    Debug.Print(String.Format("Stack:\n{0}", e.Message));
-                }
+                if (!Debugger.IsAttached) return null;
+                Debug.Print($"Exception @ VisualEffects.Animator.Animate(). Message: {e.Message}");
+                Debug.Print($"Stack:\n{e.Message}");
             }
             return null;
         }

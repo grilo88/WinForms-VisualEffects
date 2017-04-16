@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Drawing;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
-namespace VisualEffects.Animations.Effects
+namespace VisualEffects.Effects.Color
 {
     public class ColorChannelShiftEffect : IEffect
     {
@@ -14,15 +9,12 @@ namespace VisualEffects.Animations.Effects
 
         public ColorChannelShiftEffect( ColorChannels channel )
         {
-            this.ColorChannel = channel;
+            ColorChannel = channel;
         }
 
-        public EffectInteractions Interaction
-        {
-            get { return EffectInteractions.COLOR; }
-        }
+        public EffectInteractions Interaction => EffectInteractions.COLOR;
 
-        public int GetCurrentValue( System.Windows.Forms.Control control )
+        public int GetCurrentValue( Control control )
         {
             if( ColorChannel == ColorChannels.A )
                 return control.BackColor.A;
@@ -53,16 +45,16 @@ namespace VisualEffects.Animations.Effects
                     case ColorChannels.B: b = newValue; break;
                 }
 
-                control.BackColor = Color.FromArgb( a, r, g, b );
+                control.BackColor = System.Drawing.Color.FromArgb( a, r, g, b );
             }
         }
 
-        public int GetMinimumValue( System.Windows.Forms.Control control )
+        public int GetMinimumValue( Control control )
         {
             return 0;
         }
 
-        public int GetMaximumValue( System.Windows.Forms.Control control )
+        public int GetMaximumValue( Control control )
         {
             return 255;
         }

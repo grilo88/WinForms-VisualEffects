@@ -3,9 +3,8 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Runtime.InteropServices;
 
-namespace VisualEffects
+namespace VisualEffects.Extensions
 {
     public static class ImageExtensions
     {
@@ -20,7 +19,8 @@ namespace VisualEffects
         /// <summary>
         /// Get the standard deviation of pixel values.
         /// </summary>
-        /// <param name="imageFileName">Name of the image file.</param>
+        /// <param name="img"></param>
+        /// <param name="checkOnePixelEveryN"></param>
         /// <returns>Standard deviation.</returns>
         private static double GetStandardDeviation( this Image img, int checkOnePixelEveryN = 1 )
         {
@@ -28,32 +28,32 @@ namespace VisualEffects
                 throw new ArgumentException( "Must check at least one pixel every 1 pixel (every pixel)" );
 
             double total = 0, totalVariance = 0;
-            int count = 1;
+            var count = 1;
             double stdDev = 0;
 
             // First get all the bytes
-            using( Bitmap bmp = new Bitmap( img ) )
+            using( var bmp = new Bitmap( img ) )
             {
-                BitmapData bmData = bmp.LockBits( new Rectangle( 0, 0, bmp.Width, bmp.Height ), ImageLockMode.ReadOnly, bmp.PixelFormat );
-                int stride = bmData.Stride;
-                IntPtr Scan0 = bmData.Scan0;
+                var bmData = bmp.LockBits( new Rectangle( 0, 0, bmp.Width, bmp.Height ), ImageLockMode.ReadOnly, bmp.PixelFormat );
+                var stride = bmData.Stride;
+                var scan0 = bmData.Scan0;
                 unsafe
                 {
-                    byte* pointer = (byte*)Scan0;
-                    int nOffset = stride - bmp.Width * 3;
+                    var pointer = (byte*)scan0;
+                    var nOffset = stride - bmp.Width * 3;
 
-                    for( int y = 0; y < bmp.Height; pointer += nOffset, y += checkOnePixelEveryN )
+                    for( var y = 0; y < bmp.Height; pointer += nOffset, y += checkOnePixelEveryN )
                     {
-                        for( int x = 0; x < bmp.Width; count++, pointer += 3, x += checkOnePixelEveryN )
+                        for( var x = 0; x < bmp.Width; count++, pointer += 3, x += checkOnePixelEveryN )
                         {
-                            byte blue = pointer[ 0 ];
-                            byte green = pointer[ 1 ];
-                            byte red = pointer[ 2 ];
+                            var blue = pointer[ 0 ];
+                            var green = pointer[ 1 ];
+                            var red = pointer[ 2 ];
 
-                            int pixelValue = Color.FromArgb( 0, red, green, blue ).ToArgb();
+                            var pixelValue = Color.FromArgb( 0, red, green, blue ).ToArgb();
                             total += pixelValue;
 
-                            double avg = total / count;
+                            var avg = total / count;
                             totalVariance += Math.Pow( pixelValue - avg, 2 );
                             stdDev = Math.Sqrt( totalVariance / count );
                         }
@@ -70,18 +70,19 @@ namespace VisualEffects
         /// Resize an image by a percentage factor
         /// </summary>
         /// <param name="image">Source image</param>
+        /// <param name="percent"></param>
         /// <returns>Scaled image</returns>
         public static Image ScaleByPercentage( this Image image, int percent )
         {
-            float nPercent = ( (float)percent / 100 );
+            var nPercent = (float)percent / 100;
 
-            int destWidth = (int)( image.Width - ( image.Width * nPercent ) );
-            int destHeight = (int)( image.Height - ( image.Height * nPercent ) );
+            var destWidth = (int)( image.Width - ( image.Width * nPercent ) );
+            var destHeight = (int)( image.Height - ( image.Height * nPercent ) );
 
-            Bitmap bmp = new Bitmap( destWidth, destHeight, PixelFormat.Format24bppRgb );
+            var bmp = new Bitmap( destWidth, destHeight, PixelFormat.Format24bppRgb );
             bmp.SetResolution( image.HorizontalResolution, image.VerticalResolution );
 
-            using( Graphics graphics = Graphics.FromImage( bmp ) )
+            using( var graphics = Graphics.FromImage( bmp ) )
             {
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
@@ -96,14 +97,14 @@ namespace VisualEffects
 
         public static Image Resize( this Image image, Size newSize )
         {
-            Bitmap bmp = new Bitmap( newSize.Width, newSize.Height );
-            using( var gx = Graphics.FromImage( (Image)bmp ) )
+            var bmp = new Bitmap( newSize.Width, newSize.Height );
+            using( var gx = Graphics.FromImage( bmp ) )
             {
                 gx.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 gx.DrawImage( image, 0, 0, newSize.Width, newSize.Height );
             }
 
-            return (Image)bmp;
+            return bmp;
         }
 
         public static Image ToGrayscale( this Image source )
@@ -114,14 +115,14 @@ namespace VisualEffects
             {
                 var colorMatrix = new ColorMatrix
                 (
-                    new float[][] 
+                    new[]
                     { 
-                        new float[] { 0.5f, 0.5f, 0.5f, 0, 0 }, 
-                        new float[] { 0.5f, 0.5f, 0.5f, 0, 0 }, 
-                        new float[] { 0.5f, 0.5f, 0.5f, 0, 0 }, 
-                        new float[] { 0, 0, 0, 1, 0, 0 }, 
-                        new float[] { 0, 0, 0, 0, 1, 0 }, 
-                        new float[] { 0, 0, 0, 0, 0, 1 } 
+                        new[] { 0.5f, 0.5f, 0.5f, 0, 0 }, 
+                        new[] { 0.5f, 0.5f, 0.5f, 0, 0 }, 
+                        new[] { 0.5f, 0.5f, 0.5f, 0, 0 }, 
+                        new[] { 0, 0, 0, 1.0f, 0, 0 }, 
+                        new[] { 0, 0, 0, 0, 1.0f, 0 }, 
+                        new[] { 0, 0, 0, 0, 0, 1.0f } 
                     }
                 );
 
@@ -138,7 +139,7 @@ namespace VisualEffects
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="img"></param>
+        /// <param name="image"></param>
         /// <param name="opacity">A value between 0 (full transparency) and 100 (full opacity)</param>
         /// <returns></returns>
         public static Image ChangeOpacity( this Image image, int opacity )
@@ -147,19 +148,19 @@ namespace VisualEffects
             opacity = opacity > 100 ? 100 : opacity;
 
             //create a Bitmap the size of the image provided  
-            Bitmap bmp = new Bitmap( image.Width, image.Height );
+            var bmp = new Bitmap( image.Width, image.Height );
 
             //create a graphics object from the image  
-            using( Graphics gfx = Graphics.FromImage( bmp ) )
+            using( var gfx = Graphics.FromImage( bmp ) )
             {
                 //create a color matrix object  
-                ColorMatrix matrix = new ColorMatrix();
-
-                //set the opacity  
-                matrix.Matrix33 = ( (float)opacity ) / 100;
-
+                var matrix = new ColorMatrix
+                {//set the opacity  
+                    Matrix33 = (float) opacity / 100
+                };
+                
                 //create image attributes  
-                ImageAttributes attributes = new ImageAttributes();
+                var attributes = new ImageAttributes();
 
                 //set the color (opacity) of the image  
                 attributes.SetColorMatrix( matrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap );
@@ -174,13 +175,13 @@ namespace VisualEffects
         public static Image ToBlackWhite( this Image image, float threshold = 0.7f )
         {
             var outImage = new Bitmap( image.Width, image.Height, PixelFormat.Format32bppArgb );
-            using( Graphics gr = Graphics.FromImage( outImage ) )
+            using( var gr = Graphics.FromImage( outImage ) )
             {
-                var grayMatrix = new ColorMatrix( new float[][] 
+                var grayMatrix = new ColorMatrix( new[]
                 { 
-                    new float[] { 0.299f, 0.299f, 0.299f, 0, 0 }, 
-                    new float[] { 0.587f, 0.587f, 0.587f, 0, 0 }, 
-                    new float[] { 0.114f, 0.114f, 0.114f, 0, 0 }, 
+                    new[] { 0.299f, 0.299f, 0.299f, 0, 0 }, 
+                    new[] { 0.587f, 0.587f, 0.587f, 0, 0 }, 
+                    new[] { 0.114f, 0.114f, 0.114f, 0, 0 }, 
                     new float[] { 0,      0,      0,      1, 0 }, 
                     new float[] { 0,      0,      0,      0, 1 } 
                 } );
@@ -207,21 +208,21 @@ namespace VisualEffects
 
         public static bool Equals( this Bitmap bmp1, Bitmap bmp2 )
         {
-            Rectangle rect = new Rectangle( 0, 0, bmp1.Width, bmp1.Height );
-            BitmapData bmpData1 = bmp1.LockBits( rect, ImageLockMode.ReadOnly, bmp1.PixelFormat );
-            BitmapData bmpData2 = bmp2.LockBits( rect, ImageLockMode.ReadOnly, bmp2.PixelFormat );
+            var rect = new Rectangle( 0, 0, bmp1.Width, bmp1.Height );
+            var bmpData1 = bmp1.LockBits( rect, ImageLockMode.ReadOnly, bmp1.PixelFormat );
+            var bmpData2 = bmp2.LockBits( rect, ImageLockMode.ReadOnly, bmp2.PixelFormat );
 
             try
             {
                 unsafe
                 {
-                    byte* ptr1 = (byte*)bmpData1.Scan0.ToPointer();
-                    byte* ptr2 = (byte*)bmpData2.Scan0.ToPointer();
-                    int width = rect.Width * 3; // for 24bpp pixel data
+                    var ptr1 = (byte*)bmpData1.Scan0.ToPointer();
+                    var ptr2 = (byte*)bmpData2.Scan0.ToPointer();
+                    var width = rect.Width * 3; // for 24bpp pixel data
 
-                    for( int y = 0; y < rect.Height; y++ )
+                    for( var y = 0; y < rect.Height; y++ )
                     {
-                        for( int x = 0; x < width; x++ )
+                        for( var x = 0; x < width; x++ )
                         {
                             if( *ptr1 != *ptr2 )
                                 return false;

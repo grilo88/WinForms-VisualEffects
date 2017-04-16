@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 
-namespace VisualEffects.Animations.Effects
+namespace VisualEffects.Effects.Opacity
 {
     public class FormFadeEffect : IEffect
     {
@@ -23,7 +20,7 @@ namespace VisualEffects.Animations.Effects
                 throw new Exception( "Fading effect can be applied only on forms" );
 
             var form = (Form)control;
-            form.Opacity = ( (float)newValue ) / 100;
+            form.Opacity = (float)newValue / 100;
         }
 
         public int GetMinimumValue( Control control )
@@ -36,9 +33,6 @@ namespace VisualEffects.Animations.Effects
             return 100;
         }
 
-        public EffectInteractions Interaction
-        {
-            get { return EffectInteractions.TRANSPARENCY; }
-        }
+        public EffectInteractions Interaction => EffectInteractions.TRANSPARENCY;
     }
 }

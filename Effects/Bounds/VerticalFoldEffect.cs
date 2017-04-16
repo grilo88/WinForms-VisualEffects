@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
 using System.Drawing;
+using System.Windows.Forms;
 
-namespace VisualEffects.Animations.Effects
+namespace VisualEffects.Effects.Bounds
 {
     public class VerticalFoldEffect : IEffect
     {
@@ -43,9 +40,6 @@ namespace VisualEffects.Animations.Effects
             return control.MaximumSize.Width;
         }
 
-        public EffectInteractions Interaction
-        {
-            get { return EffectInteractions.BOUNDS; }
-        }
+        public EffectInteractions Interaction => EffectInteractions.BOUNDS;
     }
 }

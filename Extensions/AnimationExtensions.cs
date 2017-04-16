@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using System.Threading;
-using VisualEffects.Easing;
+﻿using System.Windows.Forms;
 using VisualEffects.Animators;
+using VisualEffects.Effects;
 
-namespace VisualEffects
+namespace VisualEffects.Extensions
 {
     public static class AnimationExtensions
     {

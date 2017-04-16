@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
 using System.Drawing;
+using System.Windows.Forms;
 
-namespace VisualEffects.Animations.Effects
+namespace VisualEffects.Effects.Bounds
 {
     public class RightAnchoredWidthEffect : IEffect
     {
