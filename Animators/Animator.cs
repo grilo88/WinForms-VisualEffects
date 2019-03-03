@@ -74,12 +74,19 @@ namespace VisualEffects.Animators
 
                    int actualValueChange = Math.Abs(originalValue - valueToReach);
 
-                   System.Timers.Timer animationTimer = new System.Timers.Timer
+                   System.Timers.Timer animationTimer = new System.Timers.Timer();
+
+                   double interval = (duration > actualValueChange) ?
+                          (duration / actualValueChange) : actualValueChange;
+
+                   // Fixes the short duration animation bug in long distance, avoiding animation crashes.
+                   if (interval > duration)
                    {
-                       Interval = duration > actualValueChange
-                           ? duration / actualValueChange
-                           : actualValueChange
-                   };
+                       double newinterval = interval / duration;
+                       interval = newinterval;
+                   }
+                   animationTimer.Interval = interval;
+
                    //adjust interval (naive, edge cases can mess up)
 
                    //because of naive interval calculation this is required
